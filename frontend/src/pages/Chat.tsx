@@ -13,9 +13,11 @@ interface Props {
   userName: string;
   businessName: string;
   onLogout: () => void;
+  onOpenProfile: () => void;
 }
 
-export default function Chat({ token, userName, businessName, onLogout }: Props) {
+export default function Chat({ token, userName, businessName, onLogout ,onOpenProfile,
+ }: Props) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -102,7 +104,9 @@ export default function Chat({ token, userName, businessName, onLogout }: Props)
             <div className="chat-status">Asistente IA · En línea</div>
           </div>
         </div>
+         <button className="profile-btn" onClick={onOpenProfile}>Perfil</button>
         <button className="logout-btn" onClick={onLogout}>Salir</button>
+       
       </div>
 
       <div className="chat-messages">

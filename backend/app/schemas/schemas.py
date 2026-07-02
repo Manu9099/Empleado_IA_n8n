@@ -38,3 +38,34 @@ class AppointmentOut(BaseModel):
     google_event_id: str | None
 
     model_config = {"from_attributes": True}
+
+
+class BusinessProfileRequest(BaseModel):
+    session_token: str
+    tone: str | None = None
+    description: str | None = None
+    address: str | None = None
+    opening_hours: str | None = None
+    services: list[dict] | None = None
+    faq: list[dict] | None = None
+    rules: list[str] | None = None
+    booking_enabled: bool | None = None
+    reminders_enabled: bool | None = None
+    whatsapp_enabled: bool | None = None
+
+
+class BusinessProfileResponse(BaseModel):
+    id: uuid.UUID
+    user_id: uuid.UUID
+    tone: str
+    description: str | None
+    address: str | None
+    opening_hours: str | None
+    services: list
+    faq: list
+    rules: list
+    booking_enabled: bool
+    reminders_enabled: bool
+    whatsapp_enabled: bool
+
+    model_config = {"from_attributes": True}

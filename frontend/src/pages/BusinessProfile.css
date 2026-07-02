@@ -1,0 +1,130 @@
+.profile-screen {
+  min-height: 100vh;
+  background: #0f0f0f;
+  color: #fff;
+  display: flex;
+  justify-content: center;
+  padding: 24px 12px;
+  font-family: Inter, sans-serif;
+}
+
+.profile-card {
+  width: 100%;
+  max-width: 760px;
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  border-radius: 18px;
+  padding: 22px;
+}
+
+.profile-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.profile-header h1 {
+  font-size: 24px;
+  margin-bottom: 4px;
+}
+
+.profile-header p {
+  color: #aaa;
+  font-size: 14px;
+}
+
+.profile-card label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+  font-size: 14px;
+  color: #ddd;
+}
+
+.profile-card input,
+.profile-card textarea {
+  width: 100%;
+  border: 1px solid #333;
+  background: #242424;
+  color: #fff;
+  border-radius: 10px;
+  padding: 11px 12px;
+  font-size: 14px;
+  outline: none;
+  font-family: Inter, sans-serif;
+}
+
+.profile-card textarea {
+  min-height: 90px;
+  resize: vertical;
+}
+
+.profile-card .code-area {
+  min-height: 150px;
+  font-family: Consolas, monospace;
+  font-size: 13px;
+}
+
+.profile-card input:focus,
+.profile-card textarea:focus {
+  border-color: #6c63ff;
+}
+
+.checks {
+  display: grid;
+  gap: 8px;
+  margin: 14px 0;
+}
+
+.check-row {
+  flex-direction: row !important;
+  align-items: center;
+  gap: 10px !important;
+  margin-bottom: 0 !important;
+}
+
+.check-row input {
+  width: auto;
+}
+
+.save-btn,
+.secondary-btn {
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  font-family: Inter, sans-serif;
+}
+
+.save-btn {
+  width: 100%;
+  margin-top: 12px;
+  background: #6c63ff;
+  color: #fff;
+  padding: 13px;
+  font-weight: 700;
+}
+
+.save-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.secondary-btn {
+  background: #242424;
+  color: #ddd;
+  border: 1px solid #333;
+  padding: 9px 12px;
+}
+
+.profile-message {
+  background: #242424;
+  border: 1px solid #333;
+  color: #ddd;
+  padding: 10px 12px;
+  border-radius: 10px;
+  margin-top: 12px;
+  font-size: 14px;
+}

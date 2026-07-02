@@ -3,7 +3,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.database import engine, Base
-from app.routers import register, chat, appointments, login
+from app.routers import register, chat, appointments, login, business_profile
 
 
 @asynccontextmanager
@@ -32,6 +32,7 @@ app.include_router(register.router)
 app.include_router(login.router)
 app.include_router(chat.router)
 app.include_router(appointments.router)
+app.include_router(business_profile.router)
 
 
 @app.get("/health")

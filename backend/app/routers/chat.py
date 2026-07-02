@@ -6,7 +6,7 @@ from sqlalchemy import select
 
 from app.core.database import get_db
 from app.core.config import settings
-from app.models.models import User, Message
+from app.models.models import User, Message, BusinessProfile
 from app.schemas.schemas import ChatRequest, ChatResponse
 
 router = APIRouter(prefix="/chat", tags=["chat"])
@@ -31,6 +31,7 @@ async def chat(body: ChatRequest, db: AsyncSession = Depends(get_db)):
         .order_by(Message.created_at.desc())
         .limit(10)
     )
+
     history = [
         {"role": m.role, "content": m.content}
         for m in reversed(hist_result.scalars().all())
@@ -46,6 +47,28 @@ async def chat(body: ChatRequest, db: AsyncSession = Depends(get_db)):
     ))
     await db.commit()
 
+    # Agregar mensaje actual al historial que se manda a n8n
+    history.append({"role": "user", "content": body.message})
+
+    # Cargar perfil del negocio
+    profile_result = await db.execute(
+        select(BusinessProfile).where(BusinessProfile.user_id == user.id)
+    )
+    profile = profile_result.scalar_one_or_none()
+
+    business_profile = {
+        "tone": profile.tone if profile else "profesional, amable y claro",
+        "description": profile.description if profile else None,
+        "address": profile.address if profile else None,
+        "opening_hours": profile.opening_hours if profile else None,
+        "services": profile.services if profile else [],
+        "faq": profile.faq if profile else [],
+        "rules": profile.rules if profile else [],
+        "booking_enabled": profile.booking_enabled if profile else True,
+        "reminders_enabled": profile.reminders_enabled if profile else False,
+        "whatsapp_enabled": profile.whatsapp_enabled if profile else False,
+    }
+
     # Enviar a n8n
     payload = {
         "user_id": str(user.id),
@@ -55,18 +78,37 @@ async def chat(body: ChatRequest, db: AsyncSession = Depends(get_db)):
         "message": body.message,
         "image_url": body.image_url,
         "history": history,
+        "business_profile": business_profile,
     }
 
     try:
         async with httpx.AsyncClient(timeout=120.0) as client:
             resp = await client.post(settings.N8N_WEBHOOK_URL, json=payload)
+            resp.raise_for_status()
+
         raw = resp.json()
-        # n8n puede devolver array u objeto
-        n8n = raw[0] if isinstance(raw, list) and len(raw) > 0 else raw if isinstance(raw, dict) else {}
+
+        if isinstance(raw, list) and len(raw) > 0:
+            n8n = raw[0]
+        elif isinstance(raw, dict):
+            n8n = raw
+        else:
+            n8n = {}
+
     except httpx.ReadTimeout:
-        n8n = {"reply": "Estoy procesando tu solicitud, esto tomó más de lo esperado. Intenta de nuevo en un momento."}
-    except Exception as e:
-        n8n = {"reply": "Hubo un problema de conexión. Intenta de nuevo."}
+        n8n = {
+            "reply": "Estoy procesando tu solicitud, esto tomó más de lo esperado. Intenta de nuevo en un momento."
+        }
+
+    except httpx.HTTPStatusError as e:
+        n8n = {
+            "reply": f"n8n respondió con error {e.response.status_code}. Revisa el workflow."
+        }
+
+    except Exception:
+        n8n = {
+            "reply": "Hubo un problema de conexión con el asistente. Intenta de nuevo."
+        }
 
     reply = n8n.get("reply") or n8n.get("output") or "Sin respuesta del asistente."
 
@@ -85,36 +127,3 @@ async def chat(body: ChatRequest, db: AsyncSession = Depends(get_db)):
         image_url=n8n.get("image_url"),
         appointment=n8n.get("appointment"),
     )
-
-
-@router.post("/upload-image")
-async def upload_image(
-    session_token: str = Form(...),
-    file: UploadFile = File(...),
-    db: AsyncSession = Depends(get_db),
-):
-    user = await get_user(session_token, db)
-    file_bytes = await file.read()
-
-    async with httpx.AsyncClient(timeout=60.0) as client:
-        resp = await client.post(
-            "https://api.nanobana.na/enhance",
-            headers={"Authorization": f"Bearer {settings.NANO_BANANA_API_KEY}"},
-            files={"image": (file.filename, file_bytes, file.content_type)},
-        )
-        resp.raise_for_status()
-        result = resp.json()
-
-    return {"original_url": result.get("original_url"), "enhanced_url": result.get("enhanced_url")}
-
-
-@router.get("/history")
-async def history(session_token: str, db: AsyncSession = Depends(get_db)):
-    user = await get_user(session_token, db)
-    result = await db.execute(
-        select(Message).where(Message.user_id == user.id).order_by(Message.created_at.asc())
-    )
-    return [
-        {"role": m.role, "content": m.content, "image_url": m.image_url, "created_at": m.created_at.isoformat()}
-        for m in result.scalars().all()
-    ]

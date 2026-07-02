@@ -1,9 +1,13 @@
 import uuid
 from datetime import datetime
-from sqlalchemy import String, Text, ForeignKey, DateTime, func
+from sqlalchemy import Boolean as SQLBoolean
+from sqlalchemy import DateTime, ForeignKey, String, Text, func
+from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy.dialects.postgresql import UUID
 from app.core.database import Base
+
+
+
 
 
 class User(Base):
@@ -20,6 +24,52 @@ class User(Base):
 
     messages: Mapped[list["Message"]] = relationship(back_populates="user")
     appointments: Mapped[list["Appointment"]] = relationship(back_populates="user")
+
+    business_profile: Mapped["BusinessProfile"] = relationship(
+    back_populates="user",
+    uselist=False,
+    cascade="all, delete-orphan",
+)
+
+class BusinessProfile(Base):
+    __tablename__ = "business_profiles"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
+    )
+
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.id"),
+        nullable=False,
+        unique=True,
+    )
+
+    tone: Mapped[str] = mapped_column(
+        String(120),
+        default="profesional, amable y claro",
+        nullable=False,
+    )
+
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    address: Mapped[str | None] = mapped_column(Text, nullable=True)
+    opening_hours: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    services: Mapped[list] = mapped_column(JSONB, default=list, nullable=False)
+    faq: Mapped[list] = mapped_column(JSONB, default=list, nullable=False)
+    rules: Mapped[list] = mapped_column(JSONB, default=list, nullable=False)
+
+    booking_enabled: Mapped[bool] = mapped_column(SQLBoolean, default=True, nullable=False)
+    reminders_enabled: Mapped[bool] = mapped_column(SQLBoolean, default=False, nullable=False)
+    whatsapp_enabled: Mapped[bool] = mapped_column(SQLBoolean, default=False, nullable=False)
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+    )
+
+    user: Mapped["User"] = relationship(back_populates="business_profile")
 
 
 class Message(Base):
