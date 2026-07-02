@@ -1,0 +1,130 @@
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+.register-screen {
+  min-height: 100vh;
+  background: #0f0f0f;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+  font-family: 'Inter', sans-serif;
+}
+
+.register-card {
+  width: 100%;
+  max-width: 400px;
+  background: #1a1a1a;
+  border-radius: 20px;
+  padding: 36px 28px;
+  border: 1px solid #2a2a2a;
+}
+
+.register-logo {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.logo-icon {
+  font-size: 40px;
+}
+
+.register-logo h1 {
+  color: #ffffff;
+  font-size: 24px;
+  font-weight: 600;
+  margin-top: 8px;
+}
+
+.register-logo p {
+  color: #666;
+  font-size: 14px;
+  margin-top: 4px;
+}
+
+.register-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.register-fields input,
+.register-fields select {
+  width: 100%;
+  padding: 14px 16px;
+  background: #242424;
+  border: 1px solid #333;
+  border-radius: 12px;
+  color: #fff;
+  font-size: 15px;
+  font-family: 'Inter', sans-serif;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.register-fields input:focus,
+.register-fields select:focus {
+  border-color: #6c63ff;
+}
+
+.register-fields select option {
+  background: #242424;
+}
+
+.register-error {
+  color: #ff4d4d;
+  font-size: 13px;
+  text-align: center;
+  margin-bottom: 12px;
+}
+
+.register-btn {
+  width: 100%;
+  padding: 15px;
+  background: #6c63ff;
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.register-btn:hover:not(:disabled) {
+  background: #5a52d5;
+}
+
+.register-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.tabs {
+  display: flex;
+  gap: 0;
+  margin-bottom: 24px;
+  background: #242424;
+  border-radius: 10px;
+  padding: 4px;
+}
+
+.tab {
+  flex: 1;
+  padding: 10px;
+  background: none;
+  border: none;
+  color: #666;
+  font-size: 14px;
+  font-weight: 500;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: all 0.2s;
+}
+
+.tab.active {
+  background: #6c63ff;
+  color: #fff;
+}

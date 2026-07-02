@@ -1,0 +1,139 @@
+# =========================
+# ENV / SECRETS
+# =========================
+.env
+.env.*
+!.env.example
+
+backend/.env
+backend/.env.*
+!backend/.env.example
+
+frontend/.env
+frontend/.env.*
+!frontend/.env.example
+
+*.key
+*.pem
+*.crt
+*.p12
+*.pfx
+secrets/
+credentials/
+
+
+# =========================
+# PYTHON / FASTAPI BACKEND
+# =========================
+__pycache__/
+*.py[cod]
+*$py.class
+
+.venv/
+venv/
+env/
+ENV/
+
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+*.log
+
+
+# =========================
+# NODE / REACT FRONTEND
+# =========================
+node_modules/
+frontend/node_modules/
+
+build/
+dist/
+frontend/build/
+frontend/dist/
+
+.npm/
+.yarn/
+.pnpm-store/
+
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+
+# =========================
+# DOCKER / LOCAL DATA
+# =========================
+docker-compose.override.yml
+
+# Si algún volumen se crea como carpeta local
+pgdata/
+postgres-data/
+postgres_data/
+n8n_data/
+n8n-data/
+
+# Backups o dumps de base de datos
+*.sql.gz
+*.dump
+*.backup
+*.bak
+
+
+# =========================
+# POSTGRES
+# =========================
+# Mantén tu init.sql si es solo estructura/query inicial.
+# No ignores:
+# postgres/init.sql
+
+postgres/data/
+postgres/pgdata/
+postgres/backups/
+
+
+# =========================
+# IDE / EDITOR
+# =========================
+.vscode/
+.idea/
+
+*.swp
+*.swo
+
+
+# =========================
+# OS FILES
+# =========================
+.DS_Store
+Thumbs.db
+desktop.ini
+
+
+# =========================
+# CACHE / TEMP
+# =========================
+.cache/
+tmp/
+temp/
+*.tmp
+
+
+# =========================
+# TEST / COVERAGE
+# =========================
+coverage/
+.coverage
+*.cover
+junit.xml
+
+
+# =========================
+# LOCAL FILES
+# =========================
+*.local
+*.sqlite
+*.sqlite3
