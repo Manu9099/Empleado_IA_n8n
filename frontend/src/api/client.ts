@@ -19,6 +19,7 @@ export async function register(data: {
   phone: string;
   email: string;
   business_name: string;
+   business_slug: string;
   rubro: string;
 }) {
   const res = await fetch(`${BASE}/register`, {

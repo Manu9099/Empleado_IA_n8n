@@ -1,0 +1,302 @@
+{
+  "name": "Empleado IA - Chat",
+  "nodes": [
+    {
+      "parameters": {
+        "jsCode": "const body = $json.body || {};\nconst headers = $json.headers || {};\n\nconst fullPath =\n  headers['x-forwarded-path'] ||\n  headers['x-original-url'] ||\n  headers['referer'] ||\n  '';\n\nlet businessSlug = body.business_slug || 'default';\n\nif (fullPath.includes('/webhook/negocio/')) {\n  businessSlug = fullPath.split('/webhook/negocio/')[1]?.split('?')[0] || businessSlug;\n}\n\n// Fallback por si n8n no manda x-forwarded-path en local\nif (businessSlug === 'default' && $json.params) {\n  businessSlug =\n    $json.params.businessSlug ||\n    $json.params[0] ||\n    $json.params.path ||\n    'default';\n}\n\nreturn [\n  {\n    json: {\n      business_slug: businessSlug,\n      client_id: body.client_id,\n      client_name: body.client_name,\n      business_id: body.business_id,\n      system_prompt: body.system_prompt || '',\n      message: body.message || '',\n      image_url: body.image_url || null,\n      history: Array.isArray(body.history) ? body.history : []\n    }\n  }\n];"
+      },
+      "id": "c04db058-c423-40e8-a753-567aea495998",
+      "name": "Preparar datos",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -64,
+        -128
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.body.message }}",
+        "options": {
+          "systemMessage": "={{ $json.body.system_prompt }}"
+        }
+      },
+      "id": "d1e4d9c5-fc2a-4a8d-a162-d89583d1acc6",
+      "name": "AI Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        160,
+        -144
+      ]
+    },
+    {
+      "parameters": {
+        "model": "llama-3.3-70b-versatile",
+        "options": {}
+      },
+      "id": "6bc621a3-75d4-45f9-a81d-7697ab30dd65",
+      "name": "Groq Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        16,
+        144
+      ],
+      "credentials": {
+        "groqApi": {
+          "id": "4KzDzzwg6kUl2iGR",
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionKey": "={{ $json.client_id }}",
+        "contextWindowLength": 10
+      },
+      "id": "09211529-43a5-4a58-9963-3ec88691a17e",
+      "name": "Postgres Chat Memory",
+      "type": "@n8n/n8n-nodes-langchain.memoryPostgresChat",
+      "typeVersion": 1.3,
+      "position": [
+        96,
+        320
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "i39qJkZJzzIGsuWc",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "id": "2dcd7b20-4864-420b-9435-5a0ad9c506f2",
+      "name": "Calculator",
+      "type": "@n8n/n8n-nodes-langchain.toolCalculator",
+      "typeVersion": 1,
+      "position": [
+        240,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "name": "code_tool",
+        "description": "Herramienta personalizada. IMPORTANTE: el contenido original de este Code Tool se perdió junto con el workflow — esto es un placeholder, reemplázalo con tu lógica real.",
+        "jsCode": "// TODO: reconstruir la lógica original de este Code Tool\nreturn { result: 'pendiente de configurar' };"
+      },
+      "id": "5c63b437-b9cc-4c3d-9cd3-6906cc7f7cc8",
+      "name": "Code Tool",
+      "type": "@n8n/n8n-nodes-langchain.toolCode",
+      "typeVersion": 1.1,
+      "position": [
+        624,
+        128
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const response = $json;\nlet reply = response.output || response.text || '';\n\n// Fix: Groq a veces expone etiquetas de function-calling en el texto plano\nreply = reply\n  .replace(/<function[^>]*>[\\s\\S]*?<\\/function>/gi, '')\n  .replace(/<\\|[^|]*\\|>/g, '')\n  .replace(/```json[\\s\\S]*?```/g, '')\n  .trim();\n\nif (!reply) {\n  reply = 'No pude generar una respuesta, intenta de nuevo.';\n}\n\nreturn [{\n  json: {\n    reply: reply,\n    image_url: null,\n    appointment: null\n  }\n}];"
+      },
+      "id": "ab2bec4a-0f90-4037-96fb-2afe8bd203c5",
+      "name": "Limpiar respuesta",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        496,
+        -128
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {}
+      },
+      "id": "551ede95-e95d-497f-9f2b-d2c138afcf51",
+      "name": "Responder al backend",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        768,
+        -128
+      ]
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Append or update row in sheet in Google Sheets",
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Document', ``, 'string') }}"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Sheet', ``, 'string') }}"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "cc54789b-3290-4568-9f32-a3c6d284f2ec",
+      "name": "Append or update row in sheet in Google Sheets",
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.5,
+      "position": [
+        480,
+        320
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "ABYPvoxKjjp9HVEm",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "negocio/*",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -304,
+        -128
+      ],
+      "id": "ea7477de-b1a6-47db-9d3a-f0c779a13a99",
+      "name": "Webhook",
+      "webhookId": "53b0424a-44f2-4f1b-8358-b894b5b00e5b"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Preparar datos": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres Chat Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calculator": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code Tool": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Limpiar respuesta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Limpiar respuesta": {
+      "main": [
+        [
+          {
+            "node": "Responder al backend",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append or update row in sheet in Google Sheets": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Preparar datos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "53c6b41c-4084-4b94-abb3-1eb05565facc",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "7a837e91dd36dc2f44cb8edf1ab99878bba2d2ab8068287389693b6f7ed88cc7"
+  },
+  "nodeGroups": [],
+  "id": "5IO64a5uiiBmJHTg",
+  "tags": []
+}
