@@ -6,10 +6,24 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
+from app.core.utils import slugify
 from app.models.models import User, BusinessProfile
 from app.schemas.schemas import RegisterRequest, RegisterResponse
 
 router = APIRouter(prefix="/register", tags=["register"])
+
+
+async def generate_unique_slug(db: AsyncSession, business_name: str) -> str:
+    """Genera un business_slug único, agregando un sufijo numérico si ya existe."""
+    base_slug = slugify(business_name)
+    slug = base_slug
+    suffix = 1
+    while True:
+        result = await db.execute(select(User).where(User.business_slug == slug))
+        if not result.scalar_one_or_none():
+            return slug
+        suffix += 1
+        slug = f"{base_slug}-{suffix}"
 
 
 @router.post("", response_model=RegisterResponse)
@@ -50,6 +64,8 @@ async def register(body: RegisterRequest, db: AsyncSession = Depends(get_db)):
             welcome_message=f"¡Bienvenido de vuelta {existing.name}! ¿En qué te ayudo hoy?",
         )
 
+    business_slug = await generate_unique_slug(db, body.business_name)
+
     user = User(
         id=uuid.uuid4(),
         name=body.name,
@@ -57,6 +73,7 @@ async def register(body: RegisterRequest, db: AsyncSession = Depends(get_db)):
         email=body.email,
         business_name=body.business_name,
         rubro=body.rubro,
+        business_slug=business_slug,
         session_token=secrets.token_hex(32),
     )
 

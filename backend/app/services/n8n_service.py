@@ -2,6 +2,62 @@ import httpx
 from app.core.config import settings
 
 
+def build_system_prompt(business_name: str, rubro: str, profile: dict) -> str:
+    """
+    Construye el system prompt que define personalidad, contexto y reglas
+    del asistente a partir del perfil del negocio.
+    """
+    lines = [
+        f'Eres el asistente virtual de "{business_name}", un negocio del rubro {rubro}.',
+        f"Tono de conversación: {profile.get('tone') or 'profesional, amable y claro'}.",
+    ]
+
+    if profile.get("description"):
+        lines.append(f"Descripción del negocio: {profile['description']}")
+
+    if profile.get("address"):
+        lines.append(f"Dirección: {profile['address']}")
+
+    if profile.get("opening_hours"):
+        lines.append(f"Horario de atención: {profile['opening_hours']}")
+
+    services = profile.get("services") or []
+    if services:
+        names = []
+        for s in services:
+            if isinstance(s, dict):
+                name = s.get("name") or s.get("nombre") or s.get("title")
+                if name:
+                    names.append(str(name))
+            else:
+                names.append(str(s))
+        if names:
+            lines.append("Servicios que ofrece el negocio: " + ", ".join(names))
+
+    faq = profile.get("faq") or []
+    if faq:
+        faq_lines = []
+        for item in faq:
+            if isinstance(item, dict):
+                q = item.get("question") or item.get("pregunta") or ""
+                a = item.get("answer") or item.get("respuesta") or ""
+                if q or a:
+                    faq_lines.append(f"- P: {q} / R: {a}")
+        if faq_lines:
+            lines.append("Preguntas frecuentes:\n" + "\n".join(faq_lines))
+
+    rules = profile.get("rules") or []
+    if rules:
+        lines.append("Reglas que debes seguir siempre:\n" + "\n".join(f"- {r}" for r in rules))
+
+    lines.append(
+        "Reservas de citas: "
+        + ("habilitadas." if profile.get("booking_enabled") else "deshabilitadas.")
+    )
+
+    return "\n\n".join(lines)
+
+
 async def call_n8n(
     *,
     business_slug: str,

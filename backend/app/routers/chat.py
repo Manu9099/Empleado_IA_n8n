@@ -5,9 +5,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from app.core.database import get_db
-from app.core.config import settings
 from app.models.models import User, Message, BusinessProfile
 from app.schemas.schemas import ChatRequest, ChatResponse
+from app.services.n8n_service import call_n8n, build_system_prompt
 
 router = APIRouter(prefix="/chat", tags=["chat"])
 
@@ -69,24 +69,24 @@ async def chat(body: ChatRequest, db: AsyncSession = Depends(get_db)):
         "whatsapp_enabled": profile.whatsapp_enabled if profile else False,
     }
 
-    # Enviar a n8n
-    payload = {
-        "user_id": str(user.id),
-        "user_name": user.name,
-        "business_name": user.business_name,
-        "rubro": user.rubro,
-        "message": body.message,
-        "image_url": body.image_url,
-        "history": history,
-        "business_profile": business_profile,
-    }
+    # Construir system prompt del negocio y enviar a su webhook de n8n
+    system_prompt = build_system_prompt(
+        business_name=user.business_name,
+        rubro=user.rubro,
+        profile=business_profile,
+    )
 
     try:
-        async with httpx.AsyncClient(timeout=120.0) as client:
-            resp = await client.post(settings.N8N_WEBHOOK_URL, json=payload)
-            resp.raise_for_status()
-
-        raw = resp.json()
+        raw = await call_n8n(
+            business_slug=user.business_slug,
+            client_id=str(user.id),
+            client_name=user.name,
+            business_id=str(user.id),
+            system_prompt=system_prompt,
+            message=body.message,
+            image_url=body.image_url,
+            history=history,
+        )
 
         if isinstance(raw, list) and len(raw) > 0:
             n8n = raw[0]
@@ -102,7 +102,7 @@ async def chat(body: ChatRequest, db: AsyncSession = Depends(get_db)):
 
     except httpx.HTTPStatusError as e:
         n8n = {
-            "reply": f"n8n respondió con error {e.response.status_code}. Revisa el workflow."
+            "reply": f"n8n respondió con error {e.response.status_code}. Revisa el workflow del negocio '{user.business_slug}'."
         }
 
     except Exception:

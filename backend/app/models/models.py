@@ -19,6 +19,7 @@ class User(Base):
     email: Mapped[str] = mapped_column(String(120), nullable=False, unique=True)
     business_name: Mapped[str] = mapped_column(String(120), nullable=False)
     rubro: Mapped[str] = mapped_column(String(80), nullable=False)
+    business_slug: Mapped[str] = mapped_column(String(160), unique=True, nullable=False)
     session_token: Mapped[str] = mapped_column(String(64), unique=True, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
@@ -26,10 +27,10 @@ class User(Base):
     appointments: Mapped[list["Appointment"]] = relationship(back_populates="user")
 
     business_profile: Mapped["BusinessProfile"] = relationship(
-    back_populates="user",
-    uselist=False,
-    cascade="all, delete-orphan",
-)
+        back_populates="user",
+        uselist=False,
+        cascade="all, delete-orphan",
+    )
 
 class BusinessProfile(Base):
     __tablename__ = "business_profiles"
