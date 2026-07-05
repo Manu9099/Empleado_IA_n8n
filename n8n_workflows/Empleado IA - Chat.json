@@ -3,23 +3,23 @@
   "nodes": [
     {
       "parameters": {
-        "jsCode": "const body = $json.body || {};\nconst headers = $json.headers || {};\n\nconst fullPath =\n  headers['x-forwarded-path'] ||\n  headers['x-original-url'] ||\n  headers['referer'] ||\n  '';\n\nlet businessSlug = body.business_slug || 'default';\n\nif (fullPath.includes('/webhook/negocio/')) {\n  businessSlug = fullPath.split('/webhook/negocio/')[1]?.split('?')[0] || businessSlug;\n}\n\n// Fallback por si n8n no manda x-forwarded-path en local\nif (businessSlug === 'default' && $json.params) {\n  businessSlug =\n    $json.params.businessSlug ||\n    $json.params[0] ||\n    $json.params.path ||\n    'default';\n}\n\nreturn [\n  {\n    json: {\n      business_slug: businessSlug,\n      client_id: body.client_id,\n      client_name: body.client_name,\n      business_id: body.business_id,\n      system_prompt: body.system_prompt || '',\n      message: body.message || '',\n      image_url: body.image_url || null,\n      history: Array.isArray(body.history) ? body.history : []\n    }\n  }\n];"
+        "jsCode": "const body = $json.body || {};\nconst params = $json.params || {};\n\nconst businessSlug = params.businessSlug || body.business_slug || 'default';\n\nconst clientId =\n  body.client_id ||\n  body.user_id ||\n  body.session_token ||\n  'anon';\n\nconst sessionId = `${businessSlug}:${clientId}`;\n\nconst message = body.message || $json.message || '';\n\nreturn [\n  {\n    json: {\n      sessionId,\n      business_slug: businessSlug,\n      client_id: clientId,\n      client_name: body.client_name || body.user_name || '',\n      business_id: body.business_id || '',\n      business_name: body.business_name || '',\n      rubro: body.rubro || '',\n      system_prompt: body.system_prompt || '',\n      message,\n      image_url: body.image_url || null,\n      history: Array.isArray(body.history) ? body.history : []\n    }\n  }\n];"
       },
       "id": "c04db058-c423-40e8-a753-567aea495998",
       "name": "Preparar datos",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -64,
-        -128
+        -144,
+        -96
       ]
     },
     {
       "parameters": {
         "promptType": "define",
-        "text": "={{ $json.body.message }}",
+        "text": "={{ $json.message }}",
         "options": {
-          "systemMessage": "={{ $json.body.system_prompt }}"
+          "systemMessage": "={{ $json.system_prompt || \"Eres un asistente virtual de negocio. Responde de forma clara, amable y útil.\" }}"
         }
       },
       "id": "d1e4d9c5-fc2a-4a8d-a162-d89583d1acc6",
@@ -27,8 +27,8 @@
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 1.7,
       "position": [
-        160,
-        -144
+        64,
+        -112
       ]
     },
     {
@@ -41,8 +41,8 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
       "typeVersion": 1,
       "position": [
-        16,
-        144
+        -48,
+        128
       ],
       "credentials": {
         "groqApi": {
@@ -53,7 +53,8 @@
     },
     {
       "parameters": {
-        "sessionKey": "={{ $json.client_id }}",
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $json.sessionId }}",
         "contextWindowLength": 10
       },
       "id": "09211529-43a5-4a58-9963-3ec88691a17e",
@@ -62,7 +63,7 @@
       "typeVersion": 1.3,
       "position": [
         96,
-        320
+        240
       ],
       "credentials": {
         "postgres": {
@@ -121,8 +122,8 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
       "position": [
-        768,
-        -128
+        720,
+        -80
       ]
     },
     {
@@ -168,15 +169,15 @@
     {
       "parameters": {
         "httpMethod": "POST",
-        "path": "negocio/*",
+        "path": "negocio/:businessSlug",
         "responseMode": "responseNode",
         "options": {}
       },
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        -304,
-        -128
+        -352,
+        -96
       ],
       "id": "ea7477de-b1a6-47db-9d3a-f0c779a13a99",
       "name": "Webhook",
@@ -291,7 +292,7 @@
     "binaryMode": "separate",
     "availableInMCP": false
   },
-  "versionId": "53c6b41c-4084-4b94-abb3-1eb05565facc",
+  "versionId": "6f8e1303-1ca1-4464-a5e9-2e673935d61e",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "7a837e91dd36dc2f44cb8edf1ab99878bba2d2ab8068287389693b6f7ed88cc7"

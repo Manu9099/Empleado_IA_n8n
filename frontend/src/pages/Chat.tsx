@@ -25,6 +25,50 @@ export default function Chat({ token, userName, businessName, onLogout ,onOpenPr
   const bottomRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
+  const [showReminder, setShowReminder] = useState(false);
+  const [reminderContact, setReminderContact] = useState('');
+  const [reminderMessage, setReminderMessage] = useState('');
+  const [sendingReminder, setSendingReminder] = useState(false);
+  const [reminderResult, setReminderResult] = useState('');
+
+  const sendReminder = async () => {
+    if (!reminderContact.trim() || !reminderMessage.trim()) {
+      setReminderResult('Completa el nombre del contacto y el mensaje.');
+      return;
+    }
+
+    setSendingReminder(true);
+    setReminderResult('');
+
+    try {
+      const response = await fetch(
+        'http://localhost:5678/webhook/buscar-contacto-wsp',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            nombre_buscado: reminderContact.trim(),
+            mensaje: reminderMessage.trim(),
+          }),
+        }
+      );
+
+      if (response.ok) {
+        setReminderResult('Enviado correctamente.');
+        setReminderContact('');
+        setReminderMessage('');
+        setTimeout(() => setShowReminder(false), 1200);
+      } else {
+        const data = await response.json().catch(() => null);
+        setReminderResult(data?.motivo || 'No se pudo enviar el mensaje.');
+      }
+    } catch {
+      setReminderResult('No se pudo conectar con el servidor de mensajes.');
+    } finally {
+      setSendingReminder(false);
+    }
+  };
+
   useEffect(() => {
     getHistory(token).then((hist: Message[]) => {
       if (hist.length === 0) {
@@ -104,9 +148,10 @@ export default function Chat({ token, userName, businessName, onLogout ,onOpenPr
             <div className="chat-status">Asistente IA · En línea</div>
           </div>
         </div>
-         <button className="profile-btn" onClick={onOpenProfile}>Perfil</button>
-        <button className="logout-btn" onClick={onLogout}>Salir</button>
-       
+        <div className="chat-header-actions">
+          <button className="profile-btn" onClick={onOpenProfile}>Perfil</button>
+          <button className="logout-btn" onClick={onLogout}>Salir</button>
+        </div>
       </div>
 
       <div className="chat-messages">
@@ -134,6 +179,13 @@ export default function Chat({ token, userName, businessName, onLogout ,onOpenPr
         <button className="attach-btn" onClick={() => fileRef.current?.click()} disabled={uploading}>
           {uploading ? '⏳' : '📎'}
         </button>
+        <button
+          className="attach-btn"
+          onClick={() => { setReminderResult(''); setShowReminder(true); }}
+          title="Enviar recordatorio"
+        >
+          🔔
+        </button>
         <input type="file" ref={fileRef} accept="image/*" onChange={handleImage} style={{ display: 'none' }} />
         <textarea
           className="chat-input"
@@ -145,6 +197,43 @@ export default function Chat({ token, userName, businessName, onLogout ,onOpenPr
         />
         <button className="send-btn" onClick={send} disabled={loading || !input.trim()}>➤</button>
       </div>
+
+      {showReminder && (
+        <div className="reminder-overlay" onClick={() => setShowReminder(false)}>
+          <div className="reminder-modal" onClick={e => e.stopPropagation()}>
+            <div className="reminder-modal-header">
+              <span>Enviar recordatorio</span>
+              <button className="reminder-close" onClick={() => setShowReminder(false)}>✕</button>
+            </div>
+
+            <label className="reminder-label">
+              Contacto
+              <input
+                value={reminderContact}
+                onChange={e => setReminderContact(e.target.value)}
+                placeholder="Ej: Juan Pérez"
+                autoFocus
+              />
+            </label>
+
+            <label className="reminder-label">
+              Mensaje
+              <textarea
+                value={reminderMessage}
+                onChange={e => setReminderMessage(e.target.value)}
+                placeholder="Ej: Te recuerdo tu cita de mañana a las 3pm."
+                rows={3}
+              />
+            </label>
+
+            {reminderResult && <div className="reminder-result">{reminderResult}</div>}
+
+            <button className="send-btn-wide" onClick={sendReminder} disabled={sendingReminder}>
+              {sendingReminder ? 'Enviando...' : 'Enviar WhatsApp'}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

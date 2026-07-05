@@ -55,6 +55,30 @@
   margin-top: 2px;
 }
 
+.chat-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.profile-btn {
+  background: none;
+  border: 1px solid #333;
+  color: #ccc;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  transition: border-color 0.2s, color 0.2s;
+}
+
+.profile-btn:hover {
+  border-color: #6c63ff;
+  color: #fff;
+}
+
 .logout-btn {
   background: none;
   border: 1px solid #333;
@@ -64,6 +88,12 @@
   font-size: 13px;
   cursor: pointer;
   font-family: 'Inter', sans-serif;
+  transition: border-color 0.2s, color 0.2s;
+}
+
+.logout-btn:hover {
+  border-color: #555;
+  color: #999;
 }
 
 /* Messages */
@@ -210,5 +240,111 @@
 
 .send-btn:disabled {
   opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Modal de recordatorio */
+.reminder-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 50;
+}
+
+.reminder-modal {
+  width: 100%;
+  max-width: 480px;
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  border-radius: 18px 18px 0 0;
+  padding: 20px;
+  animation: slideUp 0.2s ease-out;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.reminder-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: #fff;
+  font-weight: 600;
+  font-size: 16px;
+  margin-bottom: 16px;
+}
+
+.reminder-close {
+  background: none;
+  border: none;
+  color: #777;
+  font-size: 16px;
+  cursor: pointer;
+  padding: 4px;
+}
+
+.reminder-close:hover {
+  color: #fff;
+}
+
+.reminder-label {
+  display: block;
+  color: #aaa;
+  font-size: 13px;
+  margin-bottom: 14px;
+}
+
+.reminder-label input,
+.reminder-label textarea {
+  display: block;
+  width: 100%;
+  margin-top: 6px;
+  background: #242424;
+  border: 1px solid #333;
+  border-radius: 10px;
+  padding: 10px 12px;
+  color: #fff;
+  font-size: 14px;
+  font-family: 'Inter', sans-serif;
+  outline: none;
+  resize: none;
+}
+
+.reminder-label input:focus,
+.reminder-label textarea:focus {
+  border-color: #6c63ff;
+}
+
+.reminder-result {
+  color: #6c63ff;
+  font-size: 13px;
+  margin-bottom: 14px;
+}
+
+.send-btn-wide {
+  width: 100%;
+  background: #6c63ff;
+  border: none;
+  border-radius: 10px;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  padding: 12px;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  transition: background 0.2s;
+}
+
+.send-btn-wide:hover:not(:disabled) {
+  background: #5a52d5;
+}
+
+.send-btn-wide:disabled {
+  opacity: 0.5;
   cursor: not-allowed;
 }

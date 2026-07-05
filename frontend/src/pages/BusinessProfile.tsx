@@ -41,6 +41,11 @@ export default function BusinessProfile({ token, businessName, onBack }: Props) 
 
   const [message, setMessage] = useState('');
 
+  const [reminderContact, setReminderContact] = useState('');
+  const [reminderMessage, setReminderMessage] = useState('');
+  const [sendingReminder, setSendingReminder] = useState(false);
+  const [reminderResult, setReminderResult] = useState('');
+
   useEffect(() => {
     async function loadProfile() {
       try {
@@ -163,6 +168,43 @@ export default function BusinessProfile({ token, businessName, onBack }: Props) 
       setMessage('No se pudo guardar la configuración.');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const sendManualMessage = async () => {
+    if (!reminderContact.trim() || !reminderMessage.trim()) {
+      setReminderResult('Completa el nombre del contacto y el mensaje.');
+      return;
+    }
+
+    setSendingReminder(true);
+    setReminderResult('');
+
+    try {
+      const response = await fetch(
+        'http://localhost:5678/webhook/buscar-contacto-wsp',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            nombre_buscado: reminderContact.trim(),
+            mensaje: reminderMessage.trim(),
+          }),
+        }
+      );
+
+      if (response.ok) {
+        setReminderResult('Mensaje enviado correctamente.');
+        setReminderContact('');
+        setReminderMessage('');
+      } else {
+        const data = await response.json().catch(() => null);
+        setReminderResult(data?.motivo || 'No se pudo enviar el mensaje.');
+      }
+    } catch {
+      setReminderResult('No se pudo conectar con el servidor de mensajes.');
+    } finally {
+      setSendingReminder(false);
     }
   };
 
@@ -384,6 +426,45 @@ export default function BusinessProfile({ token, businessName, onBack }: Props) 
 
         <button className="save-btn" onClick={save} disabled={saving}>
           {saving ? 'Guardando...' : 'Guardar configuración'}
+        </button>
+      </div>
+
+      <div className="profile-card">
+        <div className="profile-header">
+          <div>
+            <h1>Enviar mensaje directo</h1>
+            <p>Busca un contacto por nombre y mándale un WhatsApp al instante.</p>
+          </div>
+        </div>
+
+        <label>
+          Nombre del contacto
+          <input
+            value={reminderContact}
+            onChange={(e) => setReminderContact(e.target.value)}
+            placeholder="Ej: Juan Pérez"
+          />
+        </label>
+
+        <label>
+          Mensaje
+          <textarea
+            value={reminderMessage}
+            onChange={(e) => setReminderMessage(e.target.value)}
+            placeholder="Ej: Hola Juan, te recuerdo tu cita de mañana a las 3pm."
+          />
+        </label>
+
+        {reminderResult && (
+          <div className="profile-message">{reminderResult}</div>
+        )}
+
+        <button
+          className="save-btn"
+          onClick={sendManualMessage}
+          disabled={sendingReminder}
+        >
+          {sendingReminder ? 'Enviando...' : 'Enviar WhatsApp'}
         </button>
       </div>
     </div>

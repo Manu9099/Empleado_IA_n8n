@@ -65,6 +65,9 @@ class BusinessProfile(Base):
     reminders_enabled: Mapped[bool] = mapped_column(SQLBoolean, default=False, nullable=False)
     whatsapp_enabled: Mapped[bool] = mapped_column(SQLBoolean, default=False, nullable=False)
 
+
+
+
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),

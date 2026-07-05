@@ -20,6 +20,31 @@ async def get_user(session_token: str, db: AsyncSession) -> User:
     return user
 
 
+@router.get("/history")
+async def chat_history(
+    session_token: str,
+    db: AsyncSession = Depends(get_db)
+):
+    user = await get_user(session_token, db)
+
+    result = await db.execute(
+        select(Message)
+        .where(Message.user_id == user.id)
+        .order_by(Message.created_at.desc())
+        .limit(50)
+    )
+
+    messages = list(reversed(result.scalars().all()))
+
+    return [
+        {
+            "role": message.role,
+            "content": message.content,
+            "image_url": message.image_url,
+        }
+        for message in messages
+    ]
+
 @router.post("", response_model=ChatResponse)
 async def chat(body: ChatRequest, db: AsyncSession = Depends(get_db)):
     user = await get_user(body.session_token, db)

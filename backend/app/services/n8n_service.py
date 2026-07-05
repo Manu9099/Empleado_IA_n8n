@@ -2,13 +2,36 @@ import httpx
 from app.core.config import settings
 
 
-def build_system_prompt(business_name: str, rubro: str, profile: dict) -> str:
+def build_system_prompt(business_name: str, rubro: str, profile: dict, audience: str = "internal") -> str:
     """
     Construye el system prompt que define personalidad, contexto y reglas
     del asistente a partir del perfil del negocio.
+
+    audience:
+      - "internal": quien chatea es el dueño del negocio (uso interno, hoy es el único canal).
+                    El agente puede usar tools de gestión (Sheets, Calculator, etc.) con confianza.
+      - "customer": quien chatea es un cliente externo (futuro canal: WhatsApp/widget web).
+                    El agente debe limitarse a la info pública y no tocar tools de gestión interna
+                    salvo que las reglas del negocio lo autoricen explícitamente.
     """
+    if audience == "customer":
+        audience_line = (
+            "Estás hablando con un CLIENTE EXTERNO del negocio, no con el dueño. "
+            "Solo compartes la información pública de este perfil (servicios, horarios, FAQ). "
+            "No uses herramientas de gestión interna (hojas de cálculo, reportes, etc.) a menos "
+            "que una regla del negocio lo autorice explícitamente."
+        )
+    else:
+        audience_line = (
+            "Estás hablando directamente con el DUEÑO del negocio (uso interno), no con un cliente. "
+            "Puedes usar libremente las herramientas de gestión que tengas disponibles "
+            "(hojas de cálculo, calculadora, calendario, etc.) cuando te lo pida, y darle "
+            "información completa sin los filtros que usarías con un cliente externo."
+        )
+
     lines = [
         f'Eres el asistente virtual de "{business_name}", un negocio del rubro {rubro}.',
+        audience_line,
         f"Tono de conversación: {profile.get('tone') or 'profesional, amable y claro'}.",
     ]
 

@@ -1,0 +1,147 @@
+{
+  "name": "Deteccion Patrones Semanal",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 23 * * 0"
+            }
+          ]
+        }
+      },
+      "name": "Cron Domingo 11pm",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [200, 300]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT mensaje, COUNT(*) as veces, tenant_slug FROM respuestas_agente WHERE creado_en > NOW() - INTERVAL '7 days' GROUP BY mensaje, tenant_slug HAVING COUNT(*) >= 2 ORDER BY veces DESC;"
+      },
+      "name": "Query Patrones",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2,
+      "position": [420, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.groq.com/openai/v1/chat/completions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "model",
+              "value": "llama-3.3-70b-versatile"
+            },
+            {
+              "name": "messages",
+              "value": "=[{\"role\":\"user\",\"content\":\"Analiza estos mensajes repetidos del negocio en 7 dias: {{ JSON.stringify($json) }}. Detecta si hay un proceso automatizable (ej: mismo mensaje a proveedores, mismo recordatorio a clientes, mismo reporte). Responde SOLO en JSON: {\\\"hay_patron\\\": true/false, \\\"descripcion\\\": \\\"que proceso se repite\\\", \\\"propuesta_mensaje\\\": \\\"el mensaje que se automatizaria\\\", \\\"frecuencia_sugerida\\\": \\\"cada cuanto se repite\\\", \\\"tenant_slug\\\": \\\"el tenant\\\"}\"}]"
+            }
+          ]
+        }
+      },
+      "name": "LLM Detecta Patron",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [640, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = $input.first().json.choices[0].message.content;\nconst clean = raw.replace(/```json|```/g, '').trim();\nreturn [{ json: JSON.parse(clean) }];"
+      },
+      "name": "Parse JSON",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [860, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.hay_patron }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "name": "IF Hay Patron",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [1080, 300]
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "table": "patrones_detectados",
+        "columns": "tenant_slug, descripcion, mensaje_propuesto",
+        "additionalFields": {}
+      },
+      "name": "Guardar Patron",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2,
+      "position": [1300, 220]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:8081/message/sendText/empleado-ia",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "TU_API_KEY"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "number",
+              "value": "={{ $json.telefono_dueno }}"
+            },
+            {
+              "name": "text",
+              "value": "=Detecte que repites esto {{ $json.frecuencia_sugerida }}: {{ $json.descripcion }}. ¿Quieres que lo automatice? Responde SI para activarlo."
+            }
+          ]
+        }
+      },
+      "name": "Avisar al Dueno",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [1300, 380]
+    }
+  ],
+  "connections": {
+    "Cron Domingo 11pm": {
+      "main": [[{ "node": "Query Patrones", "type": "main", "index": 0 }]]
+    },
+    "Query Patrones": {
+      "main": [[{ "node": "LLM Detecta Patron", "type": "main", "index": 0 }]]
+    },
+    "LLM Detecta Patron": {
+      "main": [[{ "node": "Parse JSON", "type": "main", "index": 0 }]]
+    },
+    "Parse JSON": {
+      "main": [[{ "node": "IF Hay Patron", "type": "main", "index": 0 }]]
+    },
+    "IF Hay Patron": {
+      "main": [
+        [
+          { "node": "Guardar Patron", "type": "main", "index": 0 },
+          { "node": "Avisar al Dueno", "type": "main", "index": 0 }
+        ]
+      ]
+    }
+  }
+}
